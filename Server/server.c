@@ -97,6 +97,7 @@ int main(int argc, char const *argv[]) {
         char *create_user = strstr(request, "CREATE USER");
         char *create_database = strstr(request, "CREATE DATABASE");
         char *use= strstr(request, "USE");
+        char *grant_permission= strstr(request, "GRANT PERMISSION");
         if (create_user){
             if(root){
                 char akun[20] = {0};
@@ -153,17 +154,21 @@ int main(int argc, char const *argv[]) {
                 n++;
             }
             
-            printf("%s\n", nama_database);
+            //printf("%s\n", nama_database);
             sprintf(path_database_baru, "databases/%s", nama_database);
             int result = mkdir(path_database_baru, 0777);
-            if(!result){
-                printf("mkdir gagal");
-            }
 
             if(!root){
                 char access_database[1024]={0};
-                sprintf(access_database, "%s,%s", nama_database, auth_akun);
-
+                char username[1024]={0};               
+                int u=0;
+                for(int i=0; i<strlen(auth_akun); i++){
+                    if(auth_akun[i]==',')
+                        break;
+                    username[u]=auth_akun[i];
+                    u++;
+                }
+                sprintf(access_database, "%s,%s", nama_database, username);
                 FILE *faccess;
                 faccess= fopen("databases/client_database/access_account.txt","a");
                 if (faccess == NULL) {
@@ -193,7 +198,15 @@ int main(int argc, char const *argv[]) {
                 n++;
             }
             char akses[1024];
-            sprintf(akses, "%s,%s", database_used, auth_akun);
+            char username[1024]={0};               
+                int u=0;
+                for(int i=0; i<strlen(auth_akun); i++){
+                    if(auth_akun[i]==',')
+                        break;
+                    username[u]=auth_akun[i];
+                    u++;
+                }
+            sprintf(akses, "%s,%s", database_used, username);
             int cek = cek_data(akses, "access_account.txt");
             if(cek || root){
                 sprintf(response, "%s USED\n", database_used);
@@ -204,6 +217,42 @@ int main(int argc, char const *argv[]) {
             
             send(new_socket, response, sizeof(response), 0);
 
+        }
+
+        if (grant_permission){
+            if(root){
+                char delim[] = " ";
+                char *ptr = strtok(request, delim);
+                int pos=0;
+                char access[1024]={0};
+                while(ptr != NULL)
+                {
+                    if(pos == 2){
+                        strcat(access, ptr);
+                        strcat(access, ",");
+                    }
+                    if(pos == 4)
+                        strcat(access, ptr);
+                    //printf("'%s'\n", ptr);
+                    ptr = strtok(NULL, delim);
+                    pos++;
+                }
+                
+                FILE *faccess;
+                faccess= fopen("databases/client_database/access_account.txt","a");
+                if (faccess == NULL) {
+                    perror("fopen()");
+                    return EXIT_FAILURE;
+                }
+                fputs(access, faccess);
+                fputs("\n", faccess);
+                fflush(faccess);
+                fclose(faccess);
+                sprintf(response, "ACCESS GRANTED\n");   
+            }
+            else
+                sprintf(response, "ACCESS DENIED!!!\n");       
+            send(new_socket, response, sizeof(response), 0);
         }
 
         char *exit = strstr(request, "exit");
