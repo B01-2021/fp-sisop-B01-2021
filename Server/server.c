@@ -8,12 +8,12 @@
 #include <sys/stat.h>
 #define PORT 8080
 
-int cek_akun(char akun[]){
-    char path_file_akun[1024];
-    sprintf(path_file_akun, "databases/client_database/client_account.txt");
+int cek_data(char data[], char nama_file[]){
+    char path_file[1024];
+    sprintf(path_file, "databases/client_database/%s", nama_file);
 
     FILE *fakun;
-    fakun= fopen(path_file_akun,"r");
+    fakun= fopen(path_file,"r");
     if (fakun == NULL) {
         perror("fopen()");
         return EXIT_FAILURE;
@@ -21,7 +21,7 @@ int cek_akun(char akun[]){
     char line[1024];
     while (fgets(line , sizeof(line) , fakun)!= NULL)
     {   
-        if (strstr(line , akun)!= NULL){
+        if (strstr(line , data)!= NULL){
             return 1;
         }
     }
@@ -74,17 +74,20 @@ int main(int argc, char const *argv[]) {
         char auth_response[1024] = {0};
         valread = read( new_socket , auth_akun, 1024);
         // printf("auth akun : %s\n", auth_akun);
-        int cek = cek_akun(auth_akun);
+        int cek = cek_data(auth_akun, "client_account.txt");
         // printf("cek = %d\n", cek);
         if(cek){
             sprintf(auth_response, "Auth berhasil\n");
         }
         else{
-            printf(auth_response, "Akunmu tidak terdaftar\n");
+            sprintf(auth_response, "Akunmu tidak terdaftar\n");
         }
         send(new_socket, auth_response, sizeof(auth_response), 0);
     }
 
+    char database_used[1024];
+    database_used[0]='\0';
+    
     while(1){
         char request[1024] = {0};
         char response[1024] = {0};
@@ -93,6 +96,7 @@ int main(int argc, char const *argv[]) {
 
         char *create_user = strstr(request, "CREATE USER");
         char *create_database = strstr(request, "CREATE DATABASE");
+        char *use= strstr(request, "USE");
         if (create_user){
             if(root){
                 char akun[20] = {0};
@@ -131,7 +135,7 @@ int main(int argc, char const *argv[]) {
                 sprintf(response, "CREATE USER SUCCESS\n");
             }
             else{
-                sprintf(response, "ACCESS DENIED\n");
+                sprintf(response, "ACCESS DENIED!!!\n");
             }
             send(new_socket, response, sizeof(response), 0);
         }
@@ -171,10 +175,37 @@ int main(int argc, char const *argv[]) {
                 fflush(faccess);
                 fclose(faccess);
             }
+            database_used[0]='\0';
+            strcpy(database_used, nama_database);
             sprintf(response, "CREATE DATABASE SUCCESS\n");
             send(new_socket, response, sizeof(response), 0);
         }   
         
+        if (use){
+            database_used[0]='\0';
+            int ii, n=0;
+            for(ii=strlen(request); ii>0; ii--){
+                if(request[ii] == 32)
+                    break;
+            }
+            for(int i=ii+1; i<strlen(request)-2; i++){
+                database_used[n]=request[i];
+                n++;
+            }
+            char akses[1024];
+            sprintf(akses, "%s,%s", database_used, auth_akun);
+            int cek = cek_data(akses, "access_account.txt");
+            if(cek || root){
+                sprintf(response, "%s USED\n", database_used);
+            }
+            else{
+                sprintf(response, "ACCESS DENIED!!!\n");
+            }
+            
+            send(new_socket, response, sizeof(response), 0);
+
+        }
+
         char *exit = strstr(request, "exit");
         if(exit)
             break;

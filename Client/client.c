@@ -37,8 +37,8 @@ int main(int argc, char const *argv[]) {
         send(sock, &root, sizeof(root), 0);
         char akun[1024] = {0};
         char auth_response[1024] = {0};
-        sprintf(akun, "%s-%s", argv[2], argv[4]);
-        printf("%s\n", akun);
+        sprintf(akun, "%s,%s", argv[2], argv[4]);
+        // printf("%s\n", akun);
         send(sock , akun, strlen(akun) , 0 );
         valread = read(sock, auth_response, 1024);
         printf("%s", auth_response);
