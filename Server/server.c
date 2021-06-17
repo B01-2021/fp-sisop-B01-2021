@@ -144,7 +144,7 @@ int main(int argc, char const *argv[]) {
                 if(request[ii] == 32)
                     break;
             }
-            for(int i=ii; i<strlen(request)-2; i++){
+            for(int i=ii+1; i<strlen(request)-2; i++){
                 nama_database[n]=request[i];
                 n++;
             }
@@ -159,7 +159,20 @@ int main(int argc, char const *argv[]) {
             if(!root){
                 char access_database[1024]={0};
                 sprintf(access_database, "%s,%s", nama_database, auth_akun);
+
+                FILE *faccess;
+                faccess= fopen("databases/client_database/access_account.txt","a");
+                if (faccess == NULL) {
+                    perror("fopen()");
+                    return EXIT_FAILURE;
+                }
+                fputs(access_database, faccess);
+                fputs("\n", faccess);
+                fflush(faccess);
+                fclose(faccess);
             }
+            sprintf(response, "CREATE DATABASE SUCCESS\n");
+            send(new_socket, response, sizeof(response), 0);
         }   
         
         char *exit = strstr(request, "exit");

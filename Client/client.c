@@ -54,8 +54,8 @@ int main(int argc, char const *argv[]) {
         char response[1024] = {0};
         fgets(request, sizeof(request), stdin);
         send(sock , request, strlen(request) , 0 );
-        //valread = read(sock, response, 1024);
-        // printf("%s", response);
+        valread = read(sock, response, 1024);
+        printf("%s", response);
         char *exit = strstr(request, "exit");
         if(exit)
             break;
