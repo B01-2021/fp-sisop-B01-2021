@@ -101,6 +101,8 @@ int main(int argc, char const *argv[]) {
         char *grant_permission= strstr(request, "GRANT PERMISSION");
         char *create_table= strstr(request, "CREATE TABLE");
         char *drop= strstr(request, "DROP");
+        char *create_table= strstr(request, "CREATE TABLE");
+        char *insert_into= strstr(request, "INSERT INTO");
 
         if (create_user){
             if(root){
@@ -353,7 +355,100 @@ int main(int argc, char const *argv[]) {
             send(new_socket, response, sizeof(response), 0);
         }
 
+        if (create_table){
+            if(database_used[0]=='\0')
+                sprintf(response, "NO DATABASE IN USE!!!\n");
+            else{
+                // printf("%s\n", database_used);
+                int spasi=0;
+                char table_name[1024]={0};
+                char table_details[1024]={0};
+                int t=0, td=0;
+                for(int i=0; i<strlen(request)-2; i++){
+                    if(request[i]=='(' || request[i]==')')
+                        continue;
+                    if(request[i]==32){
+                        spasi++;
+                    }
+                    if(spasi==2 && request[i]!=32){
+                        table_name[t]=request[i];
+                        t++;
+                    }
+                    if(spasi>=3){
+                        if((spasi==3 && request[i]==32) || (request[i]==32 && request[i-1]==','))
+                            continue;
+                        table_details[td]=request[i]; 
+                        td++;
+                    }
+                }
+                printf("%s %s\n", table_name, table_details);
+                char path_file_table[1024]={0};
+                sprintf(path_file_table, "databases/%s/%s.txt", database_used, table_name);
+                FILE *ftabel;
+                ftabel= fopen(path_file_table,"a");
+                if (ftabel == NULL) {
+                    perror("fopen()");
+                    return EXIT_FAILURE;
+                }
+                fputs(table_details, ftabel);
+                fputs("\n\n", ftabel);
+                fflush(ftabel);
+                fclose(ftabel);
+
+                sprintf(response, "CREATE TABLE SUCCESS\n");     
+            }  
+            send(new_socket, response, sizeof(response), 0);
+        }
         // CREATE TABLE table1 (kolom1 string, kolom2 int, kolom3 string, kolom4 int);
+        // INSERT INTO table1 ('value1', 2, 'value3', 4);
+        if (insert_into){
+             if(database_used[0]=='\0')
+                sprintf(response, "NO DATABASE IN USE!!!\n");
+            else{
+                int spasi=0;
+                char table_name[1024]={0};
+                char data_details[1024]={0};
+                int t=0, td=0;
+                for(int i=0; i<strlen(request)-2; i++){
+                    if(request[i]=='(' || request[i]==')')
+                        continue;
+                    if(request[i]==32){
+                        spasi++;
+                    }
+                    if(spasi==2 && request[i]!=32){
+                        table_name[t]=request[i];
+                        t++;
+                    }
+                    if(spasi>=3){
+                        if((spasi==3 && request[i]==32) || (request[i]==32 && request[i-1]==',' || request[i] == '\''))
+                            continue;
+                        printf("%d ", request[i]);
+                        data_details[td]=request[i]; 
+                        td++;
+                    }
+                }
+                printf("%s %s\n", table_name, data_details);
+
+                char path_file_table[1024]={0};
+                sprintf(path_file_table, "databases/%s/%s.txt", database_used, table_name);
+                FILE *ftabel;
+                ftabel= fopen(path_file_table,"r");
+                if (ftabel == NULL) {
+                    perror("fopen()");
+                    sprintf(response, "TABLE NOT FOUND\n"); 
+                }
+                else{
+                    ftabel= fopen(path_file_table,"a");
+                    fputs(data_details, ftabel);
+                    fputs("\n", ftabel);
+                    fflush(ftabel);
+                    fclose(ftabel);
+                    sprintf(response, "DATA ADDED SUCCESSFULLY\n"); 
+                }
+                
+            }
+            send(new_socket, response, sizeof(response), 0);
+        }
         char *exit = strstr(request, "exit");
         if(exit)
             break;
