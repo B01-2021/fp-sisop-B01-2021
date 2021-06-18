@@ -102,6 +102,7 @@ int main(int argc, char const *argv[]) {
         char *create_table= strstr(request, "CREATE TABLE");
         char *drop= strstr(request, "DROP");
         char *insert_into= strstr(request, "INSERT INTO");
+        char *select= strstr(request, "SELECT");
 
         if (create_user){
             if(root){
@@ -353,10 +354,9 @@ int main(int argc, char const *argv[]) {
             }  
             send(new_socket, response, sizeof(response), 0);
         }
-        // CREATE TABLE table1 (kolom1 string, kolom2 int, kolom3 string, kolom4 int);
-        // INSERT INTO table1 ('value1', 2, 'value3', 4);
+        
         if (insert_into){
-             if(database_used[0]=='\0')
+            if(database_used[0]=='\0')
                 sprintf(response, "NO DATABASE IN USE!!!\n");
             else{
                 int spasi=0;
@@ -401,11 +401,39 @@ int main(int argc, char const *argv[]) {
             }
             send(new_socket, response, sizeof(response), 0);
         }
+
+        if (select){
+            if(database_used[0]=='\0')
+                sprintf(response, "NO DATABASE IN USE!!!\n");
+            else{
+                 // SELECT kolom1, kolom2 FROM table1;
+                char delim[] = " ";
+                char *ptr = strtok(request, delim);
+                int pos=0;
+                char access[1024]={0};
+                while(ptr != NULL)
+                {
+                    if(pos >= 2 && strcmp(ptr,"FROM")!=0){
+                        strcat(access, ptr);
+                        strcat(access, ",");
+                    }
+                    if(pos == 4)
+                        strcat(access, ptr);
+                    //printf("'%s'\n", ptr);
+                    ptr = strtok(NULL, delim);
+                    pos++;
+                }
+            }
+                //printf("%s %s\n", table_name, data_details);
+        }
         char *exit = strstr(request, "exit");
         if(exit)
             break;
-    }
+    } 
 
+        // CREATE TABLE table1 (kolom1 string, kolom2 int, kolom3 string, kolom4 int);
+        // INSERT INTO table1 ('value1', 2, 'value3', 4);
+        // SELECT kolom1, kolom2 FROM table1;
     // printf("%s\n",buffer );
     // send(new_socket , hello , strlen(hello) , 0 );
     // printf("Hello message sent\n");
