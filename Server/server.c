@@ -302,11 +302,20 @@ int main(int argc, char const *argv[]) {
             send(new_socket, response, sizeof(response), 0);
         }
 
-        // user grant check will be added later
         if(drop_database){
             char nama_database[1024]={0};
             char path_database[1024]={0};
-            char *delim = " ;\n";
+            char username[1024]={0};
+            char akses[1024]={0};
+
+            for(int i=0; i<strlen(auth_akun); i++)
+            {
+                if(auth_akun[i]==',')
+                    break;
+                username[i]=auth_akun[i];
+            }
+
+            char *delim = " ,;\n";
             char *token = strtok(request, delim);
             int pos = 0;
             while (pos < 2)
@@ -316,16 +325,12 @@ int main(int argc, char const *argv[]) {
                 pos++;
             }
 
+            sprintf(akses, "%s,%s",nama_database,username);
             sprintf(path_database, "databases/%s", nama_database);
-            int result = rmdir(path_database);
-            if (result==0)
-            {
-                sprintf(response, "DROP DATABASE SUCCESS\n");
-            }
-            else
-            {
-                sprintf(response, "DROP DATABASE FAILED\n");
-            }
+            int result = -1;
+            if (cek_data(akses, "access_account.txt")) result = rmdir(path_database);
+            if (result==0) sprintf(response, "DROP DATABASE SUCCESS\n");
+            else sprintf(response, "DROP DATABASE FAILED\n");
 
             send(new_socket, response, sizeof(response), 0);
         }
