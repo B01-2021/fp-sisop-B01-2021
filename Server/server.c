@@ -20,7 +20,7 @@ int cek_data(char data[], char nama_file[]){
     }
     char line[1024];
     while (fgets(line , sizeof(line) , fakun)!= NULL)
-    {   
+    {
         if (strstr(line , data)!= NULL){
             return 1;
         }
@@ -35,12 +35,12 @@ int main(int argc, char const *argv[]) {
     int addrlen = sizeof(address);
     char buffer[1024] = {0};
     char *hello = "Hello from server";
-      
+
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
         perror("socket failed");
         exit(EXIT_FAILURE);
     }
-      
+
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
         perror("setsockopt");
         exit(EXIT_FAILURE);
@@ -49,7 +49,7 @@ int main(int argc, char const *argv[]) {
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons( PORT );
-      
+
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address))<0) {
         perror("bind failed");
         exit(EXIT_FAILURE);
@@ -87,7 +87,7 @@ int main(int argc, char const *argv[]) {
 
     char database_used[1024];
     database_used[0]='\0';
-    
+
     while(1){
         char request[1024] = {0};
         char response[1024] = {0};
@@ -99,6 +99,7 @@ int main(int argc, char const *argv[]) {
         char *use= strstr(request, "USE");
         char *grant_permission= strstr(request, "GRANT PERMISSION");
         char *create_table= strstr(request, "CREATE TABLE");
+        char *drop_database= strstr(request, "DROP DATABASE");
         if (create_user){
             if(root){
                 char akun[20] = {0};
@@ -154,14 +155,14 @@ int main(int argc, char const *argv[]) {
                 nama_database[n]=request[i];
                 n++;
             }
-            
+
             //printf("%s\n", nama_database);
             sprintf(path_database_baru, "databases/%s", nama_database);
             int result = mkdir(path_database_baru, 0777);
 
             if(!root){
                 char access_database[1024]={0};
-                char username[1024]={0};               
+                char username[1024]={0};
                 int u=0;
                 for(int i=0; i<strlen(auth_akun); i++){
                     if(auth_akun[i]==',')
@@ -185,8 +186,8 @@ int main(int argc, char const *argv[]) {
             strcpy(database_used, nama_database);
             sprintf(response, "CREATE DATABASE SUCCESS\n");
             send(new_socket, response, sizeof(response), 0);
-        }   
-        
+        }
+
         if (use){
             database_used[0]='\0';
             int ii, n=0;
@@ -199,7 +200,7 @@ int main(int argc, char const *argv[]) {
                 n++;
             }
             char akses[1024];
-            char username[1024]={0};               
+            char username[1024]={0};
                 int u=0;
                 for(int i=0; i<strlen(auth_akun); i++){
                     if(auth_akun[i]==',')
@@ -215,7 +216,7 @@ int main(int argc, char const *argv[]) {
             else{
                 sprintf(response, "ACCESS DENIED!!!\n");
             }
-            
+
             send(new_socket, response, sizeof(response), 0);
 
         }
@@ -238,7 +239,7 @@ int main(int argc, char const *argv[]) {
                     ptr = strtok(NULL, delim);
                     pos++;
                 }
-                
+
                 FILE *faccess;
                 faccess= fopen("databases/client_database/access_account.txt","a");
                 if (faccess == NULL) {
@@ -249,10 +250,10 @@ int main(int argc, char const *argv[]) {
                 fputs("\n", faccess);
                 fflush(faccess);
                 fclose(faccess);
-                sprintf(response, "ACCESS GRANTED\n");   
+                sprintf(response, "ACCESS GRANTED\n");
             }
             else
-                sprintf(response, "ACCESS DENIED!!!\n");       
+                sprintf(response, "ACCESS DENIED!!!\n");
             send(new_socket, response, sizeof(response), 0);
         }
 
@@ -278,7 +279,7 @@ int main(int argc, char const *argv[]) {
                     if(spasi>=3){
                         if((spasi==3 && request[i]==32) || (request[i]==32 && request[i-1]==','))
                             continue;
-                        table_details[td]=request[i]; 
+                        table_details[td]=request[i];
                         td++;
                     }
                 }
@@ -296,16 +297,34 @@ int main(int argc, char const *argv[]) {
                 fflush(ftabel);
                 fclose(ftabel);
 
-                sprintf(response, "CREATE TABLE SUCCESS\n");     
-            }  
+                sprintf(response, "CREATE TABLE SUCCESS\n");
+            }
             send(new_socket, response, sizeof(response), 0);
         }
+
+        // user grant check will be added later
+        if(drop_database){
+            char nama_database[1024]={0};
+            char path_database[1024]={0};
+            char delim = ' ';
+            char *token = strtok(request, delim);
+            int pos = 0;
+            while (pos < 3)
+            {
+                token = strtok(NULL, delim);
+                strcpy(token, nama_database);
+            }
+
+            sprintf(path_database, "databases/%s", nama_database);
+            int result = rmdir(path_database);
+        }
+        
         // CREATE TABLE table1 (kolom1 string, kolom2 int, kolom3 string, kolom4 int);
         char *exit = strstr(request, "exit");
         if(exit)
             break;
     }
-   
+
     // printf("%s\n",buffer );
     // send(new_socket , hello , strlen(hello) , 0 );
     // printf("Hello message sent\n");
