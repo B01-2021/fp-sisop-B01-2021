@@ -306,19 +306,30 @@ int main(int argc, char const *argv[]) {
         if(drop_database){
             char nama_database[1024]={0};
             char path_database[1024]={0};
-            char delim = ' ';
+            char *delim = " ;\n";
             char *token = strtok(request, delim);
             int pos = 0;
-            while (pos < 3)
+            while (pos < 2)
             {
                 token = strtok(NULL, delim);
-                strcpy(token, nama_database);
+                strcpy(nama_database, token);
+                pos++;
             }
 
             sprintf(path_database, "databases/%s", nama_database);
             int result = rmdir(path_database);
+            if (result==0)
+            {
+                sprintf(response, "DROP DATABASE SUCCESS\n");
+            }
+            else
+            {
+                sprintf(response, "DROP DATABASE FAILED\n");
+            }
+
+            send(new_socket, response, sizeof(response), 0);
         }
-        
+
         // CREATE TABLE table1 (kolom1 string, kolom2 int, kolom3 string, kolom4 int);
         char *exit = strstr(request, "exit");
         if(exit)
