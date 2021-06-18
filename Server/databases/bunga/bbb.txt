@@ -1,0 +1,4 @@
+nama string,umur int
+
+fairuz,16
+ff,12

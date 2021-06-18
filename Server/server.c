@@ -66,7 +66,8 @@ int main(int argc, char const *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    char *path="/home/bunga/FP/Server";
+    // char *path="/home/bunga/FP/Server";
+    char *path="/home/finesa/sisop-2021/fp-sisop-B01-2021/Server";
     int root;
     char auth_akun[1024] = {0};
 
@@ -356,6 +357,7 @@ int main(int argc, char const *argv[]) {
         }
         
         if (insert_into){
+            //INSERT INTO table1 (‘value1’, 2, ‘value3’, 4);
             if(database_used[0]=='\0')
                 sprintf(response, "NO DATABASE IN USE!!!\n");
             else{
@@ -403,26 +405,52 @@ int main(int argc, char const *argv[]) {
         }
 
         if (select){
+            
             if(database_used[0]=='\0')
                 sprintf(response, "NO DATABASE IN USE!!!\n");
             else{
                  // SELECT kolom1, kolom2 FROM table1;
                 char delim[] = " ";
+                request[strlen(request)-2] = '\0';
+                // printf("'%s'\n", request);
                 char *ptr = strtok(request, delim);
                 int pos=0;
-                char access[1024]={0};
+                char nama_tabel[1024]={0};
                 while(ptr != NULL)
                 {
-                    if(pos >= 2 && strcmp(ptr,"FROM")!=0){
-                        strcat(access, ptr);
-                        strcat(access, ",");
+                    if (pos == 1 && strcmp(ptr,"*")==0) {
+
                     }
-                    if(pos == 4)
-                        strcat(access, ptr);
-                    //printf("'%s'\n", ptr);
+                    if (pos == 3) {
+                        strcat(nama_tabel, ptr);
+                    }
                     ptr = strtok(NULL, delim);
                     pos++;
                 }
+                char path_file[1024];
+                sprintf(path_file, "databases/%s/%s.txt", database_used, nama_tabel);
+                printf("%s\n", path_file);
+
+                FILE *ftabel;
+                ftabel= fopen(path_file,"r");
+                if (ftabel == NULL) {
+                    // printf("error openfile");
+                    perror("fopen()");
+                    return EXIT_FAILURE;
+                }
+                char line[1024];
+                char print_select[2048];
+                int num_line = 0;
+                while (fgets(line , sizeof(line) , ftabel)!= NULL)
+                {
+                    if(num_line > 0) {
+                        strcat(print_select, line);
+                    }
+                    num_line++;
+                }
+                sprintf(response, print_select);
+                strcpy(print_select, "");
+                send(new_socket, response, sizeof(response), 0);
             }
                 //printf("%s %s\n", table_name, data_details);
         }
