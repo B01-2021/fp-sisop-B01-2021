@@ -1,0 +1,1 @@
+kolom1 string,kolom2 int,kolom3 string,kolom4 int

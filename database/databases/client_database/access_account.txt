@@ -1,0 +1,7 @@
+nyoba,bunga
+
+baru,agus;
+
+database1,bunga
+bunga,bunga
+
