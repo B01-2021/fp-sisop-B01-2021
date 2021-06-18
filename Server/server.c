@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <errno.h>
 #define PORT 8080
 
 int cek_data(char data[], char nama_file[]){
@@ -99,7 +100,8 @@ int main(int argc, char const *argv[]) {
         char *use= strstr(request, "USE");
         char *grant_permission= strstr(request, "GRANT PERMISSION");
         char *create_table= strstr(request, "CREATE TABLE");
-        char *drop_database= strstr(request, "DROP DATABASE");
+        char *drop= strstr(request, "DROP");
+
         if (create_user){
             if(root){
                 char akun[20] = {0};
@@ -302,11 +304,16 @@ int main(int argc, char const *argv[]) {
             send(new_socket, response, sizeof(response), 0);
         }
 
-        if(drop_database){
-            char nama_database[1024]={0};
-            char path_database[1024]={0};
+        if (drop) {
+            char nama_objek[1024]={0};
+            char path_objek[1024]={0};
+            char tipe_objek[16]={0};
             char username[1024]={0};
             char akses[1024]={0};
+            int result = -1;
+
+            char *delim = " ,;\n";
+            char *token = strtok(request, delim);
 
             for(int i=0; i<strlen(auth_akun); i++)
             {
@@ -315,22 +322,33 @@ int main(int argc, char const *argv[]) {
                 username[i]=auth_akun[i];
             }
 
-            char *delim = " ,;\n";
-            char *token = strtok(request, delim);
-            int pos = 0;
-            while (pos < 2)
+            token = strtok(NULL, delim);
+            strcpy(tipe_objek, token);
+            if (strcmp(tipe_objek, "DATABASE") == 0)
             {
                 token = strtok(NULL, delim);
-                strcpy(nama_database, token);
-                pos++;
+                strcpy(nama_objek, token);
+                sprintf(akses, "%s,%s",nama_objek,username);
+
+            } else if (strcmp(tipe_objek, "TABLE") == 0)
+            {
+                token = strtok(NULL, delim);
+                sprintf(nama_objek, "%s/%s.txt", database_used, token);
+                sprintf(akses, "%s,%s",database_used,username);
+
             }
 
-            sprintf(akses, "%s,%s",nama_database,username);
-            sprintf(path_database, "databases/%s", nama_database);
-            int result = -1;
-            if (cek_data(akses, "access_account.txt")) result = rmdir(path_database);
-            if (result==0) sprintf(response, "DROP DATABASE SUCCESS\n");
-            else sprintf(response, "DROP DATABASE FAILED\n");
+            sprintf(path_objek, "databases/%s", nama_objek);
+
+            if (cek_data(akses, "access_account.txt") && database_used[0] != '\0')
+                result = remove(path_objek);
+            if (database_used[0] == '\0')
+                sprintf(response, "NO DATABASE IN USE!!!\n");
+
+            if (result==0)sprintf(response, "DROP %s SUCCESS\n", tipe_objek);
+            else if (errno==ENOTEMPTY) sprintf(response, "DROP %s FAILED\n%s not empty\n", tipe_objek, nama_objek);
+            else if (errno==ENOENT) sprintf(response, "DROP %s FAILED\n%s not exists\n", tipe_objek, nama_objek);
+            else sprintf(response, "DROP %s FAILED\n", tipe_objek);
 
             send(new_socket, response, sizeof(response), 0);
         }
